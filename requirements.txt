@@ -3,3 +3,4 @@ flask-cors
 requests
 yara-python
 python-magic
+fpdf2

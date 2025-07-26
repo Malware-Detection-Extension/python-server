@@ -5,6 +5,7 @@ import os
 from analyzer.file_type import get_file_type
 from analyzer.yara_scan import scan_with_yara
 from urllib.parse import urlparse
+from report_manager import save_report
 
 app = Flask(__name__)
 CORS(app)
@@ -40,15 +41,20 @@ def report_download():
 
         file_type = get_file_type(filepath)
         yara_matches = scan_with_yara(filepath)
+        is_malicious = bool(yara_matches)
 
         print(f"[+] 파일 유형: {file_type}")
         print(f"[+] YARA 매치: {yara_matches}")
 
+        report_id = save_report(filepath, yara_matches, is_malicious)
+
         return jsonify({
             "filename": filename,
             "file_type": file_type,
-            "is_malicious": bool(yara_matches),
-            "yara_matches": yara_matches
+            "is_malicious": is_malicious,
+            "yara_matches": yara_matches,
+            "report_id": report_id,
+            "pdf_report": f"reports/pdf/{report_id}.pdf"
         }), 200
 
     except requests.exceptions.RequestException as re:
