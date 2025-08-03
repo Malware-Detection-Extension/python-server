@@ -138,7 +138,13 @@ class MalwareScanner:
                 {
                     "rule": match.rule,
                     "meta": match.meta,
-                    "strings": [(s.identifier, s.instances) for s in match.strings]
+                    "strings": [
+                        {
+                            "identifier": s.identifier,
+                            "offset": s.offset,
+                            "data": s.data.decode('utf-8', errors='ignore')
+                        } for s in match.strings
+                    ]
                 }
                 for match in matches
             ]
