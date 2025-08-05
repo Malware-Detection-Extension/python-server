@@ -1,0 +1,6 @@
+{
+  "error": "Invalid JSON result from worker",
+  "log": "2025-08-04 12:22:20,407 - INFO - [*] Analysis request for: https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTcrYtl3lqXgsQTKaYVP40_IU4z2K5INoqpFw&s (filename: 20250804_122219_d3890b1495.images)\n2025-08-04 12:22:20,407 - INFO - [*] Downloading file from URL: https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTcrYtl3lqXgsQTKaYVP40_IU4z2K5INoqpFw&s\n2025-08-04 12:22:20,643 - INFO - [*] Attempting to save file to: /app/downloads/20250804_122219_d3890b1495.images\n2025-08-04 12:22:20,643 - INFO - [+] File saved successfully to: /app/downloads/20250804_122219_d3890b1495.images\n2025-08-04 12:22:20,643 - INFO - [+] Saved file size: 6404 bytes\n2025-08-04 12:22:20,643 - INFO - [*] Analyzing file type...\n2025-08-04 12:22:20,645 - INFO - [+] File type: JPEG Image\n2025-08-04 12:22:20,645 - INFO - [*] Performing YARA scan...\n[+] YARA \uaddc\uce59 \ub85c\ub4dc \uc644\ub8cc: ./rules/rules_combined.yar\n<RESULT>\n{\"filename\": \"20250804_122219_d3890b1495.images\", \"file_type\": \"JPEG Image\", \"is_malicious\": false, \"yara_matches\": [], \"risk_score\": 0, \"message\": \"\\uc548\\uc804\\ud55c \\ud30c\\uc77c\\uc785\\ub2c8\\ub2e4.\"}\n2025-08-04 12:22:20,658 - INFO - [+] File deemed safe.\n",
+  "is_malicious": true,
+  "message": "Failed to parse worker output."
+}

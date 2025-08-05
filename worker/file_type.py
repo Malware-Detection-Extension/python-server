@@ -1,5 +1,6 @@
 import magic
 import os
+import math
 import struct
 import hashlib
 
@@ -111,14 +112,14 @@ class FileTypeAnalyzer:
             for byte in data:
                 frequency[byte] += 1
             
-            # 엔트로피 계산
+           # 엔트로피 계산
             entropy = 0.0
             data_len = len(data)
             
             for count in frequency:
                 if count > 0:
                     probability = count / data_len
-                    entropy -= probability * (probability.bit_length() - 1)
+                    entropy -= probability * math.log2(probability)
             
             return entropy
             

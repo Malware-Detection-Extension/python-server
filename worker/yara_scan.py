@@ -6,7 +6,7 @@ import json
 from datetime import datetime
 
 class MalwareScanner:
-    def __init__(self, rules_path="analyzer/rules.yar"):
+    def __init__(self, rules_path="./rules/rules_combined.yar"):
         self.rules_path = rules_path
         self.rules = None
         self.load_rules()
@@ -138,7 +138,13 @@ class MalwareScanner:
                 {
                     "rule": match.rule,
                     "meta": match.meta,
-                    "strings": [(s.identifier, s.instances) for s in match.strings]
+                    "strings": [
+                        {
+                            "identifier": s.identifier,
+                            "offset": s.offset,
+                            "data": s.data.decode('utf-8', errors='ignore')
+                        } for s in match.strings
+                    ] 
                 }
                 for match in matches
             ]
@@ -163,40 +169,49 @@ class MalwareScanner:
         return result
     
     def calculate_risk_score(self, yara_matches, extension_risk, size_anomaly):
-        """위험도 점수를 계산합니다 (0-100)."""
         score = 0
-        
-        # YARA 매치 점수
+        yara_score = 0
+    
+        # 1. YARA 매치 점수 (누적 합산 및 우선순위 지정)
+        max_yara_score_from_cumulative = 0
         for match in yara_matches:
-            if 'severity' in match['meta']:
-                severity = match['meta']['severity']
-                if severity == 'critical':
-                    score += 40
-                elif severity == 'high':
-                    score += 30
-                elif severity == 'medium':
-                    score += 20
-                else:
-                    score += 10
-            else:
-                score += 15  # 기본 점수
-        
-        # 확장자 위험도 점수
-        if extension_risk['risk'] == 'high':
-            score += 20
-        elif extension_risk['risk'] == 'medium':
-            score += 10
-        
-        # 파일 크기 이상 징후 점수
+            severity = match['meta'].get('severity', 'low')
+            if severity == 'critical':
+                return 100  # 치명적인 위협 발견 시 즉시 100점
+            elif severity == 'high':
+                yara_score = max(yara_score, 70)
+            elif severity == 'medium':
+                # medium 룰 여러 개가 누적되도록 점수를 합산
+                max_yara_score_from_cumulative += 15 
+            elif severity == 'low':
+                # low 룰 여러 개가 누적되도록 점수를 합산
+                max_yara_score_from_cumulative += 5
+
+        # high 룰에 걸리지 않았을 때만 누적 점수 적용 (최대 점수 40점)
+        if yara_score < 70:
+            yara_score = max(yara_score, min(max_yara_score_from_cumulative, 40))
+
+        # 2. 확장자 위험도 점수
+        extension_score = 0
+        risk_level = extension_risk.get('risk', 'low')
+        if risk_level == 'high':
+            extension_score = 30
+        elif risk_level == 'medium':
+            extension_score = 15
+
+        # 3. 파일 크기 이상 징후 점수
+        anomaly_score = 0
         if size_anomaly:
-            if size_anomaly['anomaly'] == 'empty_file':
-                score += 15
-            elif size_anomaly['anomaly'] == 'tiny_executable':
-                score += 25
+            if size_anomaly['anomaly'] == 'tiny_executable':
+                anomaly_score = 25
+            elif size_anomaly['anomaly'] == 'empty_file':
+                anomaly_score = 10
             elif size_anomaly['anomaly'] == 'large_file':
-                score += 5
-        
-        return min(score, 100)  # 최대 100점
+                anomaly_score = 5
+
+        # 4. 최종 점수 합산
+        score = yara_score + extension_score + anomaly_score
+        return min(score, 100)
 
 # 기존 함수와의 호환성을 위한 래퍼 함수
 def scan_with_yara(file_path):

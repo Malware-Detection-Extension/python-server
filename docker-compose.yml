@@ -1,12 +1,23 @@
-version: '3.8'
+version: "3.8"
 services:
-  flask-server:
+  malware-scanner:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
     volumes:
-      - ./downloads:/app/downloads
       - ./reports:/app/reports
       - ./quarantine:/app/quarantine
+      - ./downloads:/app/downloads
+      - /var/run/docker.sock:/var/run/docker.sock  # Docker 소켓 마운트
+    privileged: true  # Docker-in-Docker를 위한 권한
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - HOST_DOWNLOADS_PATH=/home/mde/malware-detection-extension/python-server/downloads 
+  malware-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    image: malware_worker:latest
+    profiles: ["build-only"]

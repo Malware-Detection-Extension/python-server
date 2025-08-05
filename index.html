@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>멀웨어 분석기</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .container {
+            max-width: 800px;
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        pre {
+            white-space: pre-wrap; /* 긴 내용 줄바꿈 */
+            word-break: break-all; /* 단어 단위로도 줄바꿈 */
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="container bg-white p-8 rounded-xl shadow-lg w-full">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">멀웨어 분석기</h1>
+
+        <!-- 1. 분석할 파일 URL (직접 입력) 섹션 -->
+        <div class="mb-8 p-6 bg-blue-50 rounded-lg border border-blue-200">
+            <h2 class="text-xl font-semibold text-blue-800 mb-4">직접 파일 URL 분석</h2>
+            <div class="mb-4">
+                <label for="directFileUrl" class="block text-gray-700 text-sm font-medium mb-2">
+                    분석할 파일의 직접 다운로드 URL 입력:
+                </label>
+                <input
+                    type="url"
+                    id="directFileUrl"
+                    class="shadow-sm appearance-none border border-gray-300 rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                    placeholder="예: http://example.com/malware.exe"
+                    required
+                >
+            </div>
+            <button
+                id="analyzeDirectFileButton"
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-200 flex items-center justify-center space-x-2"
+            >
+                <span id="analyzeDirectFileButtonText">직접 파일 분석 시작</span>
+                <div id="analyzeDirectFileLoadingSpinner" class="hidden loading-spinner"></div>
+            </button>
+        </div>
+
+        <!-- 2. 다운로드가 있는 URL 분석 섹션 (새로 추가) -->
+        <div class="mb-8 p-6 bg-yellow-50 rounded-lg border border-yellow-200">
+            <h2 class="text-xl font-semibold text-yellow-800 mb-4">다운로드 링크 포함 URL 분석</h2>
+            <div class="mb-4">
+                <label for="downloadPageUrl" class="block text-gray-700 text-sm font-medium mb-2">
+                    다운로드 링크가 있는 웹 페이지 URL 입력:
+                </label>
+                <input
+                    type="url"
+                    id="downloadPageUrl"
+                    class="shadow-sm appearance-none border border-gray-300 rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition duration-200"
+                    placeholder="예: https://software.com/download-page"
+                    required
+                >
+            </div>
+            <button
+                id="analyzeDownloadPageButton"
+                class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-75 transition duration-200 flex items-center justify-center space-x-2"
+            >
+                <span id="analyzeDownloadPageButtonText">다운로드 페이지 분석 시작</span>
+                <div id="analyzeDownloadPageLoadingSpinner" class="hidden loading-spinner"></div>
+            </button>
+            <p class="text-sm text-gray-600 mt-3 text-center">
+                페이지를 분석하여 다운로드 링크를 추출하고 파일을 분석합니다.
+            </p>
+        </div>
+
+        <!-- 3. HTML URL 정적 분석 섹션 -->
+        <div class="mb-8 p-6 bg-green-50 rounded-lg border border-green-200">
+            <h2 class="text-xl font-semibold text-green-800 mb-4">HTML URL 정적 분석</h2>
+            <div class="mb-4">
+                <label for="htmlUrl" class="block text-gray-700 text-sm font-medium mb-2">
+                    분석할 HTML URL 입력:
+                </label>
+                <input
+                    type="url"
+                    id="htmlUrl"
+                    class="shadow-sm appearance-none border border-gray-300 rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200"
+                    placeholder="예: https://www.malicious-site.com"
+                    required
+                >
+            </div>
+            <button
+                id="analyzeHtmlButton"
+                class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75 transition duration-200 flex items-center justify-center space-x-2"
+            >
+                <span id="analyzeHtmlButtonText">HTML 분석 시작</span>
+                <div id="analyzeHtmlLoadingSpinner" class="hidden loading-spinner"></div>
+            </button>
+        </div>
+
+        <!-- 분석 결과 표시 영역 -->
+        <div id="resultContainer" class="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-200 hidden">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">분석 결과</h2>
+            <p id="statusMessage" class="text-lg font-medium mb-2"></p>
+            <div id="details" class="text-gray-700 text-sm"></div>
+            <div id="downloadLinkContainer" class="mt-4 hidden">
+                <a id="downloadLink" href="#" class="inline-block bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
+                    안전한 파일 다운로드
+                </a>
+            </div>
+        </div>
+
+        <div id="errorMessage" class="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg hidden">
+            <p class="font-bold">오류 발생:</p>
+            <p id="errorText"></p>
+        </div>
+    </div>
+
+    <script>
+        // 서버 IP와 포트 번호를 설정하는 변수
+        const SERVER_IP = 'localhost'; // 서버의 IP 주소 또는 도메인
+        const SERVER_PORT = '8080';    // 서버의 포트 번호
+        const BASE_URL = `http://${SERVER_IP}:${SERVER_PORT}`; // 기본 URL 구성
+
+        // 1. 직접 파일 URL 분석 관련 DOM 요소
+        const directFileUrlInput = document.getElementById('directFileUrl');
+        const analyzeDirectFileButton = document.getElementById('analyzeDirectFileButton');
+        const analyzeDirectFileButtonText = document.getElementById('analyzeDirectFileButtonText');
+        const analyzeDirectFileLoadingSpinner = document.getElementById('analyzeDirectFileLoadingSpinner');
+
+        // 2. 다운로드 링크 포함 URL 분석 관련 DOM 요소
+        const downloadPageUrlInput = document.getElementById('downloadPageUrl');
+        const analyzeDownloadPageButton = document.getElementById('analyzeDownloadPageButton');
+        const analyzeDownloadPageButtonText = document.getElementById('analyzeDownloadPageButtonText');
+        const analyzeDownloadPageLoadingSpinner = document.getElementById('analyzeDownloadPageLoadingSpinner');
+
+        // 3. HTML URL 정적 분석 관련 DOM 요소
+        const htmlUrlInput = document.getElementById('htmlUrl');
+        const analyzeHtmlButton = document.getElementById('analyzeHtmlButton');
+        const analyzeHtmlButtonText = document.getElementById('analyzeHtmlButtonText');
+        const analyzeHtmlLoadingSpinner = document.getElementById('analyzeHtmlLoadingSpinner');
+
+        // 공통 결과 표시 관련 DOM 요소
+        const resultContainer = document.getElementById('resultContainer');
+        const statusMessage = document.getElementById('statusMessage');
+        const detailsDiv = document.getElementById('details');
+        const downloadLinkContainer = document.getElementById('downloadLinkContainer');
+        const downloadLink = document.getElementById('downloadLink');
+        const errorMessageDiv = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+
+        // UI 상태 설정 함수
+        function setUIState(button, buttonTextSpan, spinner, isLoading) {
+            button.disabled = isLoading;
+            buttonTextSpan.textContent = isLoading ? '분석 중...' : buttonTextSpan.dataset.originalText;
+            if (isLoading) {
+                spinner.classList.remove('hidden');
+                spinner.classList.add('inline-block');
+            } else {
+                spinner.classList.add('hidden');
+                spinner.classList.remove('inline-block');
+            }
+        }
+
+        // 초기 버튼 텍스트 저장
+        analyzeDirectFileButtonText.dataset.originalText = analyzeDirectFileButtonText.textContent;
+        analyzeDownloadPageButtonText.dataset.originalText = analyzeDownloadPageButtonText.textContent;
+        analyzeHtmlButtonText.dataset.originalText = analyzeHtmlButtonText.textContent;
+
+        // 결과 표시 함수
+        function displayResult(result) {
+            resultContainer.classList.remove('hidden');
+            downloadLinkContainer.classList.add('hidden'); // 초기화
+
+            let analysisTypeLabel = '';
+            if (result.analysis_type === 'file') {
+                analysisTypeLabel = '파일';
+            } else if (result.analysis_type === 'html') {
+                analysisTypeLabel = 'HTML';
+            } else if (result.analysis_type === 'download_page') {
+                analysisTypeLabel = '다운로드 페이지';
+            } else {
+                analysisTypeLabel = '콘텐츠'; // 기본값 또는 알 수 없는 타입
+            }
+
+
+            if (result.is_malicious) {
+                statusMessage.textContent = `🚨 악성 ${analysisTypeLabel}로 탐지되었습니다! (위험 점수: ${result.risk_score || 0})`;
+                statusMessage.classList.remove('text-green-600');
+                statusMessage.classList.add('text-red-600');
+            } else {
+                statusMessage.textContent = `✅ 안전한 ${analysisTypeLabel}입니다. (위험 점수: ${result.risk_score || 0})`;
+                statusMessage.classList.remove('text-red-600');
+                statusMessage.classList.add('text-green-600');
+                // 파일 분석 결과일 경우에만 다운로드 링크 표시
+                if (result.analysis_type === 'file' && result.safe_filename) {
+                    downloadLink.href = `${BASE_URL}/safe_download/${result.safe_filename}`;
+                    downloadLinkContainer.classList.remove('hidden');
+                }
+            }
+
+            let detailsHtml = `<p class="font-semibold">메시지: ${result.message || 'N/A'}</p>`;
+            if (result.analysis_details) {
+                detailsHtml += `<h3 class="font-semibold mt-4 mb-2">상세 분석 정보:</h3>`;
+                detailsHtml += `<ul class="list-disc list-inside space-y-1">`;
+                for (const key in result.analysis_details) {
+                    const value = result.analysis_details[key];
+                    detailsHtml += `<li><span class="font-medium">${key}:</span> ${typeof value === 'object' ? `<pre>${JSON.stringify(value, null, 2)}</pre>` : value}</li>`;
+                }
+                detailsHtml += `</ul>`;
+            } else if (result.log) { // 오류 로그가 있다면 표시
+                detailsHtml += `<h3 class="font-semibold mt-4 mb-2">로그:</h3>`;
+                detailsHtml += `<pre class="bg-gray-100 p-2 rounded-md text-xs whitespace-pre-wrap">${result.log}</pre>`;
+            }
+            detailsDiv.innerHTML = detailsHtml;
+        }
+
+        // 오류 메시지 표시 함수
+        function showError(message) {
+            errorMessageDiv.classList.remove('hidden');
+            errorText.textContent = message;
+            resultContainer.classList.add('hidden'); // 결과 컨테이너 숨김
+        }
+
+        // 1. 직접 파일 URL 분석 버튼 이벤트 리스너
+        analyzeDirectFileButton.addEventListener('click', async () => {
+            const url = directFileUrlInput.value.trim();
+            if (!url) {
+                showError('분석할 파일의 직접 다운로드 URL을 입력해주세요.');
+                return;
+            }
+
+            setUIState(analyzeDirectFileButton, analyzeDirectFileButtonText, analyzeDirectFileLoadingSpinner, true);
+            resultContainer.classList.add('hidden');
+            errorMessageDiv.classList.add('hidden');
+
+            try {
+                const response = await fetch(`${BASE_URL}/report_download`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url, filename: url.split('/').pop() || 'download.bin' }),
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || '서버 오류가 발생했습니다.');
+                }
+                displayResult(result);
+
+            } catch (error) {
+                showError(`파일 직접 분석 요청 중 오류 발생: ${error.message}`);
+                console.error('Fetch error (Direct File Analysis):', error);
+            } finally {
+                setUIState(analyzeDirectFileButton, analyzeDirectFileButtonText, analyzeDirectFileLoadingSpinner, false);
+            }
+        });
+
+        // 2. 다운로드 링크 포함 URL 분석 버튼 이벤트 리스너 (새로 추가)
+        analyzeDownloadPageButton.addEventListener('click', async () => {
+            const url = downloadPageUrlInput.value.trim();
+            if (!url) {
+                showError('다운로드 링크가 있는 웹 페이지 URL을 입력해주세요.');
+                return;
+            }
+
+            setUIState(analyzeDownloadPageButton, analyzeDownloadPageButtonText, analyzeDownloadPageLoadingSpinner, true);
+            resultContainer.classList.add('hidden');
+            errorMessageDiv.classList.add('hidden');
+
+            try {
+                const response = await fetch(`${BASE_URL}/extract_and_analyze_download`, { // 새로운 엔드포인트 호출
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url }),
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || '서버 오류가 발생했습니다.');
+                }
+                displayResult(result);
+
+            } catch (error) {
+                showError(`다운로드 페이지 분석 요청 중 오류 발생: ${error.message}`);
+                console.error('Fetch error (Download Page Analysis):', error);
+            } finally {
+                setUIState(analyzeDownloadPageButton, analyzeDownloadPageButtonText, analyzeDownloadPageLoadingSpinner, false);
+            }
+        });
+
+        // 3. HTML URL 정적 분석 버튼 이벤트 리스너
+        analyzeHtmlButton.addEventListener('click', async () => {
+            const url = htmlUrlInput.value.trim();
+            if (!url) {
+                showError('분석할 HTML URL을 입력해주세요.');
+                return;
+            }
+
+            setUIState(analyzeHtmlButton, analyzeHtmlButtonText, analyzeHtmlLoadingSpinner, true);
+            resultContainer.classList.add('hidden');
+            errorMessageDiv.classList.add('hidden');
+
+            try {
+                const response = await fetch(`${BASE_URL}/analyze_html`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url }),
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || '서버 오류가 발생했습니다.');
+                }
+                displayResult(result);
+
+            } catch (error) {
+                showError(`HTML 분석 요청 중 오류 발생: ${error.message}`);
+                console.error('Fetch error (HTML Analysis):', error);
+            } finally {
+                setUIState(analyzeHtmlButton, analyzeHtmlButtonText, analyzeHtmlLoadingSpinner, false);
+            }
+        });
+    </script>
+</body>
+</html>
+

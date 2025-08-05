@@ -1,5 +1,8 @@
 flask
 flask-cors
 requests
-yara-python
+docker
 python-magic
+yara-python
+beautifulsoup4
+lxml
