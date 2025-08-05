@@ -144,7 +144,7 @@ class MalwareScanner:
                             "offset": s.offset,
                             "data": s.data.decode('utf-8', errors='ignore')
                         } for s in match.strings
-                    ] 
+                    ]
                 }
                 for match in matches
             ]
